@@ -34,19 +34,31 @@ Q33 = [144.28*pi/180.0, -72.18*pi/180.0, 116.07*pi/180.0, -131.85*pi/180.0, -90.
 
 
 ############## Your Code Start Here ##############
-# Q[tower][height], where tower 0/1/2 are the three table locations and
-# height 0/1/2 is the position in the stack.  Height 2 is the block sitting on
-# the table, height 0 is the top of a full three block stack.
+"""
+Q[tower][height] -> joint angles for that tower/height.
+Rows are tower locations 0,1,2 (left to right).
+Columns are stack heights 0,1,2 (bottom to top).
+Q?1 is the lowest block, Q?3 is the highest.
+"""
+
 Q = [ [Q11, Q12, Q13], \
       [Q21, Q22, Q23], \
       [Q31, Q32, Q33] ]
 
-# Joint angle offset (shoulder lift) used to hover above a waypoint before
-# dropping down onto a block or lifting away from one.
-APPROACH_OFFSET = np.radians(12.0)
+# Vertical clearance (radians) added to the shoulder_lift joint so the arm
+# lifts above the stacks before travelling between towers.
+Z_CLEARANCE = -25*pi/180.0
 
-# Analog Input 0 reads above this value when the suction cup has a block.
-SUCTION_THRESHOLD = 1.5
+# Analog Input 0 reads low when the suction cup is sealed against a block and
+# high when it is drawing open air. Verify this on the teach pendant by toggling
+# Digital Output 0 while running: ros2 topic echo /io_and_status_controller/io_states
+SUCTION_THRESHOLD = 1.0
+
+def above(q):
+    """Return a pose directly above q, clear of the blocks."""
+    q_above = list(q)
+    q_above[1] = q_above[1] + Z_CLEARANCE
+    return q_above
 ############### Your Code End Here ###############
 class UR3e(Node):
     def __init__(self):
@@ -59,9 +71,11 @@ class UR3e(Node):
         self.joint_state_sub = self.create_subscription(JointState, '/joint_states', self.joint_state_callback, 10)
 
         ############## Your Code Start Here ##############
-        # Gripper input: /io_and_status_controller/io_states carries ur_msgs/msg/IOStates,
-        # whose analog_in_states[] array holds the suction feedback on pin 0.
-        self.io_state_sub = self.create_subscription(IOStates, '/io_and_status_controller/io_states', self.io_state_callback, 10)
+        # Subscriber for the gripper input message.
+        # ROS2 gripper input topic: /io_and_status_controller/io_states
+        self.io_states_sub = self.create_subscription(
+            IOStates, '/io_and_status_controller/io_states', self.io_state_callback, 10)
+
         ############### Your Code End Here ###############
 
         # Service clients
@@ -91,11 +105,13 @@ class UR3e(Node):
     def io_state_callback(self, msg):
     ############## Your Code Start Here ##############
         """
-        Called whenever /io_and_status_controller/io_states publishes.
-        msg.analog_in_states is an array of entries that each carry a pin
-        number and a state, and the array order is not guaranteed to match
-        the pin numbering, so search for the entry whose pin is 0 rather
-        than indexing into it directly.
+        Store the state of the suction cup feedback (Analog Input 0).
+        Whenever /io_and_status_controller/io_states publishes this info,
+        this callback function is called.
+
+        analog_in_states is an array of entries with a 'pin' and a 'state'
+        field, so search for the entry whose pin is 0 rather than assuming
+        index 0 corresponds to pin 0.
         """
         for analog_in in msg.analog_in_states:
             if analog_in.pin == 0:
@@ -103,15 +119,6 @@ class UR3e(Node):
                 break
 
     ############### Your Code End Here ###############
-
-    def gripper_has_block(self):
-        """Spin briefly so a fresh IOStates message arrives, then report whether
-        Analog Input 0 indicates a block is held by the suction cup."""
-        start_time = time.time()
-        while time.time() - start_time < 1.0:
-            rclpy.spin_once(self, timeout_sec=0.1)
-        self.get_logger().info(f'Analog Input 0 = {self.analog_in_0_value}')
-        return self.analog_in_0_value > SUCTION_THRESHOLD
 
     def set_io(self, pin, state):
         req = SetIO.Request()
@@ -194,17 +201,11 @@ class UR3e(Node):
 
 
 
-    def approach_of(self, target):
-        """Waypoint directly above target, made by lifting the shoulder."""
-        above = list(target)
-        above[1] = above[1] - APPROACH_OFFSET
-        return above
-
     def move_block(self, start_tower, start_height, end_tower, end_height):
         global Q
     ############## Your Code Start Here ##############
-    # Pick the block at Q[start_tower][start_height] and place it at
-    # Q[end_tower][end_height].  Returns 0 on success, 1 on error.
+    # Move a block from (start_tower, start_height) to (end_tower, end_height).
+    ### Hint: Use the Q array to map out your towers by location and "height".
 
         error = 0
 
@@ -215,84 +216,56 @@ class UR3e(Node):
             f'Moving block: tower {start_tower + 1} height {start_height + 1}'
             f' -> tower {end_tower + 1} height {end_height + 1}')
 
-        # Hover above the block, then descend onto it
-        if not self.move_arm(self.approach_of(pick)):
+        # Approach above the block, then descend onto it.
+        if not self.move_arm(above(pick)):
             self.get_logger().error("Failed to move above pick location")
             return 1
         if not self.move_arm(pick):
-            self.get_logger().error("Failed to move to pick location")
+            self.get_logger().error("Failed to move down to pick location")
             return 1
 
-        # Grab the block and give the suction cup time to seal
+        # Grab the block and give the suction cup time to seal.
         self.set_io(0, 1.0)
         time.sleep(1.0)
 
-        # Suction feedback: if nothing was picked up, there is no block here
-        if not self.gripper_has_block():
+        # Let the io_states callback run so analog_in_0_value is current.
+        spin_start = time.time()
+        while time.time() - spin_start < 0.5:
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+        # Suction feedback check: if no block was picked up, stop with an error.
+        if self.analog_in_0_value <= SUCTION_THRESHOLD:
             self.get_logger().error(
-                f'No block detected at tower {start_tower + 1},'
-                f' height {start_height + 1}!')
+                f'No block detected at tower {start_tower + 1} height {start_height + 1}'
+                f' (Analog Input 0 = {self.analog_in_0_value:.3f})')
             self.set_io(0, 0.0)
             return 1
 
-        # Lift straight up, cross over, and descend onto the destination
-        if not self.move_arm(self.approach_of(pick)):
+        # Lift clear, travel to the destination, then lower into place.
+        if not self.move_arm(above(pick)):
             self.get_logger().error("Failed to lift block off pick location")
             self.set_io(0, 0.0)
             return 1
-        if not self.move_arm(self.approach_of(place)):
+        if not self.move_arm(above(place)):
             self.get_logger().error("Failed to move above place location")
             self.set_io(0, 0.0)
             return 1
         if not self.move_arm(place):
-            self.get_logger().error("Failed to move to place location")
+            self.get_logger().error("Failed to move down to place location")
             self.set_io(0, 0.0)
             return 1
 
-        # Release the block and back away before the next move
+        # Release the block and retreat upward.
         self.set_io(0, 0.0)
         time.sleep(0.5)
-        if not self.move_arm(self.approach_of(place)):
+
+        if not self.move_arm(above(place)):
             self.get_logger().error("Failed to retreat from place location")
             return 1
 
         return error
 
     ############### Your Code End Here ###############
-
-
-def get_tower(prompt):
-    """Prompt until the user enters a valid tower, returned as index 0, 1 or 2."""
-    while True:
-        input_string = input(prompt)
-        print("You entered " + input_string + "\n")
-        try:
-            value = int(input_string)
-        except ValueError:
-            print("Please just enter 1 2 3, or 0 to quit \n\n")
-            continue
-
-        if value == 0:
-            print("Quitting... ")
-            sys.exit()
-        elif value in (1, 2, 3):
-            return value - 1
-        else:
-            print("Please just enter 1 2 3, or 0 to quit \n\n")
-
-
-def hanoi_moves(n, source, destination, spare):
-    """Return the list of (from_tower, to_tower) moves that transfers a stack of
-    n blocks from source to destination without ever placing a larger block on
-    a smaller one."""
-    if n == 0:
-        return []
-    # Move the top n-1 blocks out of the way, move the bottom block across,
-    # then stack the n-1 blocks back on top of it.
-    moves = hanoi_moves(n - 1, source, spare, destination)
-    moves.append((source, destination))
-    moves.extend(hanoi_moves(n - 1, spare, destination, source))
-    return moves
 
 
 def main(args=None):
@@ -308,6 +281,7 @@ def main(args=None):
     executor.add_node(node)
 
     ############## Your Code Start Here ##############
+    # Prompt the user for the start and destination towers.
     # Wait for initial state updates
     while node.current_joint_state is None:
         executor.spin_once(timeout_sec=0.05)
@@ -315,45 +289,71 @@ def main(args=None):
         time.sleep(0.5)
 
     try:
-        # Get the start and destination towers from the user
-        start_tower = get_tower("Enter the START tower <1 2 or 3, or 0 to quit> ")
-        end_tower = get_tower("Enter the DESTINATION tower <1 2 or 3, or 0 to quit> ")
+        # Get user input
+        input_string = input("Enter starting tower <1 2 or 3, or 0 to quit> ")
+        print("You entered " + input_string + "\n")
+        if int(input_string) == 0:
+            print("Quitting... ")
+            sys.exit()
+        if int(input_string) not in (1, 2, 3):
+            print("Please just enter 1 2 or 3, or 0 to quit \n\n")
+            sys.exit()
+        start_tower = int(input_string) - 1
+
+        input_string = input("Enter destination tower <1 2 or 3, or 0 to quit> ")
+        print("You entered " + input_string + "\n")
+        if int(input_string) == 0:
+            print("Quitting... ")
+            sys.exit()
+        if int(input_string) not in (1, 2, 3):
+            print("Please just enter 1 2 or 3, or 0 to quit \n\n")
+            sys.exit()
+        end_tower = int(input_string) - 1
 
         if start_tower == end_tower:
-            print("Start and destination towers must be different. Quitting...")
+            print("Start and destination towers must be different.\n\n")
             sys.exit()
 
-        # The third tower is the spare used for intermediate moves
+        # The third tower is the spare used to stage blocks.
         spare_tower = 3 - start_tower - end_tower
 
-        print(f'Moving the tower from location {start_tower + 1}'
-              f' to location {end_tower + 1}\n')
+        ############## Your Code Start Here ##############
+        # Move the tower according to the user input.
 
-        # stacks[t] lists the blocks on tower t, bottom first.  Blocks are
-        # numbered 1 (smallest, on top) through 3 (largest, on the bottom),
-        # so the start tower begins as [3, 2, 1].
-        stacks = [[], [], []]
-        stacks[start_tower] = [3, 2, 1]
+        # Iterative 3-disk Tower of Hanoi, smallest block first.
+        # Each entry is (source tower, destination tower). Heights are tracked
+        # below, since a block's height depends on how many blocks are already
+        # stacked on the destination.
+        moves = [
+            (start_tower, end_tower),
+            (start_tower, spare_tower),
+            (end_tower, spare_tower),
+            (start_tower, end_tower),
+            (spare_tower, start_tower),
+            (spare_tower, end_tower),
+            (start_tower, end_tower),
+        ]
 
-        node.move_arm(home)
-
-        for src, dst in hanoi_moves(3, start_tower, end_tower, spare_tower):
-            # The block being moved is on top of the source stack; its height
-            # index is set by how many blocks are already on that tower.
-            # A tower holding n blocks has its top block at height index 3 - n.
-            src_height = 3 - len(stacks[src])
-            dst_height = 3 - (len(stacks[dst]) + 1)
-
-            if node.move_block(src, src_height, dst, dst_height) != 0:
-                node.get_logger().error("Tower of Hanoi failed, stopping.")
-                node.set_io(0, 0.0)
-                node.move_arm(home)
-                sys.exit(1)
-
-            stacks[dst].append(stacks[src].pop())
+        # Blocks currently stacked on each tower at the start: 3 on the start
+        # tower (heights 0,1,2 from the bottom), none elsewhere.
+        stack_counts = [0, 0, 0]
+        stack_counts[start_tower] = 3
 
         node.move_arm(home)
-        print("Tower of Hanoi complete.\n")
+
+        for src, dst in moves:
+            start_height = stack_counts[src] - 1
+            end_height = stack_counts[dst]
+
+            if node.move_block(src, start_height, dst, end_height) != 0:
+                node.get_logger().error("Halting: block not found where expected.")
+                break
+
+            stack_counts[src] = stack_counts[src] - 1
+            stack_counts[dst] = stack_counts[dst] + 1
+        else:
+            node.get_logger().info("Tower of Hanoi complete.")
+            node.move_arm(home)
 
     except KeyboardInterrupt:
         pass
