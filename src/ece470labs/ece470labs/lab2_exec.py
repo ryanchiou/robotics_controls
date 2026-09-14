@@ -39,8 +39,8 @@ TODO: Initialize Q matrix
 """
 
 Q = [ [Q11, Q12, Q13], \
-      [Q11, Q12, Q13], \
-      [Q11, Q12, Q13] ]
+      [Q21, Q22, Q23], \
+      [Q31, Q32, Q33] ]
 ############### Your Code End Here ###############
 class UR3e(Node):
     def __init__(self):
@@ -56,6 +56,7 @@ class UR3e(Node):
         # TODO: define a ROS subscriber for gripper input message and corresponding callback function
         # ROS2 gripper input topic: /io_and_status_controller/io_states
 
+        self.io_state_sub = self.create_subscription(IOStates, '/io_and_status_controller/io_states', self.io_state_callback, 10)
 
         ############### Your Code End Here ###############
 
@@ -93,7 +94,10 @@ class UR3e(Node):
         called.
         """
 
-        pass
+        for analog_in in msg.analog_in_states:
+            if analog_in.pin == 0:
+                self.analog_in_0_value = analog_in.state
+                break
 
     ############### Your Code End Here ###############
 
@@ -186,7 +190,54 @@ class UR3e(Node):
 
         error = 0
 
+        SUCTION_THRESHOLD = 2.0
 
+        above_start = list(Q[start_tower][0])
+        above_start[1] = above_start[1] - 15*pi/180.0
+        above_end = list(Q[end_tower][0])
+        above_end[1] = above_end[1] - 15*pi/180.0
+
+        if not self.move_arm(above_start):
+            self.get_logger().error("Failed to move above tower " + str(start_tower + 1))
+            return 1
+
+        if not self.move_arm(Q[start_tower][start_height]):
+            self.get_logger().error("Failed to move to tower " + str(start_tower + 1) + " height " + str(start_height + 1))
+            return 1
+
+        self.set_io(0, 1.0)
+        time.sleep(1.0)
+
+        start_time = time.time()
+        while time.time() - start_time < 1.0:
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+        if self.analog_in_0_value < SUCTION_THRESHOLD:
+            self.get_logger().error("No block detected at tower " + str(start_tower + 1) + " height " + str(start_height + 1))
+            self.set_io(0, 0.0)
+            return 1
+
+        if not self.move_arm(above_start):
+            self.get_logger().error("Failed to lift block from tower " + str(start_tower + 1))
+            self.set_io(0, 0.0)
+            return 1
+
+        if not self.move_arm(above_end):
+            self.get_logger().error("Failed to move above tower " + str(end_tower + 1))
+            self.set_io(0, 0.0)
+            return 1
+
+        if not self.move_arm(Q[end_tower][end_height]):
+            self.get_logger().error("Failed to move to tower " + str(end_tower + 1) + " height " + str(end_height + 1))
+            self.set_io(0, 0.0)
+            return 1
+
+        self.set_io(0, 0.0)
+        time.sleep(1.0)
+
+        if not self.move_arm(above_end):
+            self.get_logger().error("Failed to retract from tower " + str(end_tower + 1))
+            return 1
 
         return error
 
@@ -216,20 +267,35 @@ def main(args=None):
 
     try:
         # Get user input
-        input_string = input("Enter number of loops <Either 1 2 3 or 0 to quit> ")
+        input_string = input("Enter start tower <Either 1 2 3 or 0 to quit> ")
         print("You entered " + input_string + "\n")
 
-        if(int(input_string) == 1):
-            loop_count = 1
-        elif (int(input_string) == 2):
-            loop_count = 2
-        elif (int(input_string) == 3):
-            loop_count = 3
-        elif (int(input_string) == 0):
+        if (int(input_string) == 0):
             print("Quitting... ")
             sys.exit()
+        elif (int(input_string) in [1, 2, 3]):
+            start_tower = int(input_string) - 1
         else:
             print("Please just enter the character 1 2 3 or 0 to quit \n\n")
+            sys.exit()
+
+        input_string = input("Enter destination tower <Either 1 2 3 or 0 to quit> ")
+        print("You entered " + input_string + "\n")
+
+        if (int(input_string) == 0):
+            print("Quitting... ")
+            sys.exit()
+        elif (int(input_string) in [1, 2, 3]):
+            end_tower = int(input_string) - 1
+        else:
+            print("Please just enter the character 1 2 3 or 0 to quit \n\n")
+            sys.exit()
+
+        if start_tower == end_tower:
+            print("Start and destination towers must be different \n\n")
+            sys.exit()
+
+        loop_count = 1
 
         ############## Your Code Start Here ##############
         # TODO: modify the code so that UR3e can move tower accordingly from user input
@@ -238,27 +304,40 @@ def main(args=None):
 
             node.move_arm(home)
 
-            node.get_logger().info(f'Sending goal 1 ...')
+            moves = []
 
-            if not node.move_arm(Q[0][0]):
-                node.get_logger().error("Failed to move to goal" + str(Q[0][0]))
+            def hanoi(n, source, target, spare):
+                if n == 0:
+                    return
+                hanoi(n - 1, source, spare, target)
+                moves.append((source, target))
+                hanoi(n - 1, spare, target, source)
+
+            spare_tower = 3 - start_tower - end_tower
+            hanoi(3, start_tower, end_tower, spare_tower)
+
+            stacks = [[], [], []]
+            stacks[start_tower] = [3, 2, 1]
+
+            failed = False
+            for (source, target) in moves:
+                start_height = len(stacks[source]) - 1
+                end_height = len(stacks[target])
+
+                node.get_logger().info(f'Moving block from tower {source + 1} to tower {target + 1} ...')
+
+                if node.move_block(source, start_height, target, end_height) != 0:
+                    node.get_logger().error("Failed to move block from tower " + str(source + 1) + " to tower " + str(target + 1))
+                    failed = True
+                    break
+
+                stacks[target].append(stacks[source].pop())
+
+            if failed:
                 break
 
-            node.set_io(0, 1.0)  # Turn/ on suction
-            # Delay to make sure suction cup has grasped the block
-            time.sleep(1.0)
-
-            node.get_logger().info(f'Sending goal 2 ...')
-            if not node.move_arm(Q[1][1]):
-                node.get_logger().error("Failed to move to goal"+str(Q[1][1]))
-                break
-
-            node.get_logger().info(f'Sending goal 3 ...')
-            if not node.move_arm(Q[2][2]):
-                node.get_logger().error("Failed to move to goal"+str(Q[2][2]))
-                break
+            node.move_arm(home)
             loop_count = loop_count - 1
-            node.set_io(0, 0.0)  # Turn off suction
 
     except KeyboardInterrupt:
         pass
