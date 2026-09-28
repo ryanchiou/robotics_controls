@@ -21,7 +21,7 @@ class JointAngles:
         self.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 # UR3 home position
-home = np.radians([0, 0, 0, 0, 0, 0])
+home = np.radians([180, 0, 0, -90, 0, 0])
 
 class UR3e(Node):
     def __init__(self):
@@ -175,6 +175,88 @@ class UR3e(Node):
         return error
 
     ############### Your Code End Here ###############
+
+
+
+
+
+
+def Get_MS():
+	# =================== Your code starts here ====================#
+	# Fill in the correct values for S1~6, as well as the M matrix
+	M = [[0,-1,0,392],\
+        [0,0,-1,432],\
+        [1,0,0,215.5],\
+        [0,0,0,1]]
+
+    
+	S1 = [[0,-1,0,-150],\
+        [1,0,0,150],\
+        [0,0,0,10],\
+        [0,0,0,0]]
+
+	S2 = [[0,0,1,-150],\
+        [0,0,0,270],\
+        [-1,0,0,162],\
+        [0,0,0,0]]
+
+	S3 = [[0,0,1,94],\
+        [0,0,0,270],\
+        [-1,0,0,162],\
+        [0,0,0,0]]
+
+	S4 = [[0,0,1,307],\
+        [0,0,0,177],\
+        [-1,0,0,162],\
+        [0,0,0,0]] 
+
+
+	S5 = [[0,0,0,307],\
+        [0,0,-1,340],\
+        [0,1,0,162],\
+        [0,0,0,0]]
+
+	S6 = [[0,0,1,392],\
+        [0,0,0,432],\
+        [-1,0,0,215.5],\
+        [0,0,0,0]]                   
+    
+
+	# ==============================================================#
+	return M, S1, S2, S3, S4, S5, S6
+
+
+
+
+"""
+Function that calculates encoder numbers for each motor
+"""
+def lab_fk(theta1, theta2, theta3, theta4, theta5, theta6):
+
+	# Initialize the return_value
+	return_value = [None, None, None, None, None, None]
+
+	# =========== Implement joint angle to encoder expressions here ===========
+	print("Foward kinematics calculated:\n")
+
+	# =================== Your code starts here ====================#
+
+	T = expm(S1*theta1)*expm(S2*theta2)*expm(S3*theta3)*expm(S4*theta4)*expm(S5*theta5)*expm(S6*theta6)*M
+	# ==============================================================#
+
+	print(str(T) + "\n")
+
+	return_value[0] = theta1 + pi
+	return_value[1] = theta2
+	return_value[2] = theta3
+	return_value[3] = theta4 - (0.5*pi)
+	return_value[4] = theta5
+	return_value[5] = theta6
+
+	return return_value
+
+
+
 
 
 def main(args=None):
