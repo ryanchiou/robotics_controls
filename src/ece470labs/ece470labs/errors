@@ -1,14 +1,25 @@
-[WARN] [1790609983.659170845] [ur3e]: IO service not available, waiting...
-^CTraceback (most recent call last):
+andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab3_exec 0 -90 45 0 -90 105
+Check if the UR3e is in 'Remote' Mode?
+    Check if the UR3e is initialized and in 'Normal' state.
+    Have you run the ROS2 launch statement?
+    If there was an UR3e emergency stop or error, Ctrl-C the ros2 launch and rerun.
+    
+    Press <Enter> to Continue.
+[INFO] [1790610243.479798440] [ur3e]: Waiting for initial state updates...
+
+theta1: 0, theta2: -90, theta3: 45, theta4: 0, theta5: -90, theta6: 105
+
+Foward kinematics calculated:
+
+Traceback (most recent call last):
   File "/home/andrewe9/ECE470Labs/lab_files/install/ece470labs/lib/ece470labs/lab3_exec", line 33, in <module>
     sys.exit(load_entry_point('ece470labs', 'console_scripts', 'lab3_exec')())
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 263, in main
-    node = UR3e()
-           ^^^^^^
-  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 46, in __init__
-    while not self.io_client.wait_for_service(timeout_sec=2.0):
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/client.py", line 188, in wait_for_service
-    time.sleep(sleep_time)
-KeyboardInterrupt
+  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 284, in main
+    new_dest = lab_fk(float(sys.argv[1])*pi/180.0, float(sys.argv[2])*pi/180.0, \
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 239, in lab_fk
+    T = expm(S1*theta1)@expm(S2*theta2)@expm(S3*theta3)@expm(S4*theta4)@expm(S5*theta5)@expm(S6*theta6)@M
+             ~~^~~~~~~
+TypeError: can't multiply sequence by non-int of type 'float'
+[ros2run]: Process exited with failure 1
