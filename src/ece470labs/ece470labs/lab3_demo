@@ -1,0 +1,38 @@
+andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab3_exec 6.37 -69.9 125.67 -56.76 -88.54 89.9
+Check if the UR3e is in 'Remote' Mode?
+    Check if the UR3e is initialized and in 'Normal' state.
+    Have you run the ROS2 launch statement?
+    If there was an UR3e emergency stop or error, Ctrl-C the ros2 launch and rerun.
+    
+    Press <Enter> to Continue.
+[INFO] [1790613344.923718959] [ur3e]: Waiting for initial state updates...
+
+theta1: 6.37, theta2: -69.9, theta3: 125.67, theta4: -56.76, theta5: -88.54, theta6: 89.9
+
+Foward kinematics calculated:
+
+[[ 9.93481940e-01 -1.13084194e-01 -1.43387897e-02  1.77656317e+02]
+ [ 1.12665755e-01  9.93259540e-01 -2.72380818e-02  3.22357796e+02]
+ [ 1.73223362e-02  2.54450517e-02  9.99526131e-01  6.65004673e+01]
+ [ 8.69935389e-19 -6.38042972e-19  1.62948323e-18  1.00000000e+00]]
+
+[INFO] [1790613345.425431677] [ur3e]: Moving to position: [ 186.37  -69.9   125.67 -146.76  -88.54   89.9 ]
+andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab3_exec -46.73 -75.65 98.23 -59.53 -112.40 89.88
+Check if the UR3e is in 'Remote' Mode?
+    Check if the UR3e is initialized and in 'Normal' state.
+    Have you run the ROS2 launch statement?
+    If there was an UR3e emergency stop or error, Ctrl-C the ros2 launch and rerun.
+    
+    Press <Enter> to Continue.
+[INFO] [1790613524.702883951] [ur3e]: Waiting for initial state updates...
+
+theta1: -46.73, theta2: -75.65, theta3: 98.23, theta4: -59.53, theta5: -112.40, theta6: 89.88
+
+Foward kinematics calculated:
+
+[[ 5.49511828e-01  8.29054117e-01 -1.03469909e-01  2.13226622e+02]
+ [-5.80914850e-01  4.68144099e-01  6.65867134e-01 -1.28530066e+02]
+ [ 6.00478716e-01 -3.05794659e-01  7.38860567e-01  2.88253581e+02]
+ [-2.01322315e-18 -5.37002966e-19  5.18352946e-18  1.00000000e+00]]
+
+[INFO] [1790613525.204919341] [ur3e]: Moving to position: [ 133.27  -75.65   98.23 -149.53 -112.4    89.88]
