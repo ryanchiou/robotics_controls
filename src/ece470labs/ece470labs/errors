@@ -1,28 +1,14 @@
-andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab3_exec 0 -90 45 0 -90 105
-Traceback (most recent call last):
+[WARN] [1790609983.659170845] [ur3e]: IO service not available, waiting...
+^CTraceback (most recent call last):
   File "/home/andrewe9/ECE470Labs/lab_files/install/ece470labs/lib/ece470labs/lab3_exec", line 33, in <module>
     sys.exit(load_entry_point('ece470labs', 'console_scripts', 'lab3_exec')())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/andrewe9/ECE470Labs/lab_files/install/ece470labs/lib/ece470labs/lab3_exec", line 25, in importlib_load_entry_point
-    return next(matches).load()
-           ^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/importlib/metadata/__init__.py", line 205, in load
-    module = import_module(match.group('module'))
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 991, in exec_module
-  File "<frozen importlib._bootstrap_external>", line 1129, in get_code
-  File "<frozen importlib._bootstrap_external>", line 1059, in source_to_code
-  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
-  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 243
-    M, S1, S2, S3, S4, S5, S6 = [np.array(X, dtype=float) for X in Get_MS()]
-                                                                            ^
-IndentationError: unindent does not match any outer indentation level
-[ros2run]: Process exited with failure 1
-andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ^C
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 263, in main
+    node = UR3e()
+           ^^^^^^
+  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 46, in __init__
+    while not self.io_client.wait_for_service(timeout_sec=2.0):
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/client.py", line 188, in wait_for_service
+    time.sleep(sleep_time)
+KeyboardInterrupt
