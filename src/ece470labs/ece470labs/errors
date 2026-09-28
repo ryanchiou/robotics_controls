@@ -1,0 +1,23 @@
+andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab3_exec
+\Check if the UR3e is in 'Remote' Mode?
+    Check if the UR3e is initialized and in 'Normal' state.
+    Have you run the ROS2 launch statement?
+    If there was an UR3e emergency stop or error, Ctrl-C the ros2 launch and rerun.
+    
+    Press <Enter> to Continue.
+[INFO] [1790608601.862348284] [ur3e]: Waiting for initial state updates...
+
+
+Command should be entered in degrees with format: 
+
+ros2 run ECE470lab lab3_exec theta1 theta2 theta3 theta4 theta5 theta6 
+
+Traceback (most recent call last):
+  File "/home/andrewe9/ECE470Labs/lab_files/install/ece470labs/lib/ece470labs/lab3_exec", line 33, in <module>
+    sys.exit(load_entry_point('ece470labs', 'console_scripts', 'lab3_exec')())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 291, in main
+    new_dest = lab_fk(float(sys.argv[1])*pi/180.0, float(sys.argv[2])*pi/180.0, \
+                            ~~~~~~~~^^^
+IndexError: list index out of range
+[ros2run]: Process exited with failure 1
