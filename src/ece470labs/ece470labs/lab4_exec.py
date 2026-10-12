@@ -21,7 +21,7 @@ class JointAngles:
         self.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 # UR3 home position
-home = np.radians([120, -90, 90, -90, -90, 0])
+home = np.radians([180, 0, 0, -90, 0, 0])
 
 class UR3e(Node):
     def __init__(self):
@@ -173,6 +173,119 @@ class UR3e(Node):
 
     ############### Your Code End Here ###############
 
+# UR3e link lengths in mm
+L1 = 152
+L2 = 120
+L3 = 244
+L4 = 93
+L5 = 213
+L6 = 104
+L7 = 85
+L8 = 92
+L9 = 53.5
+L10 = 59
+
+# M and S matrices
+M = np.array([[0,-1,0,392],\
+        [0,0,-1,432],\
+        [1,0,0,215.5],\
+        [0,0,0,1]])
+
+    
+S1 = np.array([[0,-1,0,150],\
+        [1,0,0,150],\
+        [0,0,0,0],\
+        [0,0,0,0]])
+
+S2 = np.array([[0,0,1,-162],\
+        [0,0,0,0],\
+        [-1,0,0,-150],\
+        [0,0,0,0]])
+
+S3 = np.array([[0,0,1,-162],\
+        [0,0,0,0],\
+        [-1,0,0,94],\
+        [0,0,0,0]])
+
+S4 = np.array([[0,0,1,-162],\
+        [0,0,0,0],\
+        [-1,0,0,307],\
+        [0,0,0,0]])
+
+
+S5 = np.array([[0,0,0,0],\
+        [0,0,-1,162],\
+        [0,1,0,-281],\
+        [0,0,0,0]])
+
+S6 = np.array([[0,0,1,-162],\
+        [0,0,0,0],\
+        [-1,0,0,392],\
+        [0,0,0,0]])                   
+
+
+"""
+Function that calculates encoder numbers for each motor
+"""
+def lab_fk(theta1, theta2, theta3, theta4, theta5, theta6):
+
+	# Initialize the return_value
+	return_value = [None, None, None, None, None, None]
+
+	# =========== Implement joint angle to encoder expressions here ===========
+	print("Foward kinematics calculated:\n")
+
+	# =================== Your code starts here ====================#
+
+	T = expm(S1*theta1)@expm(S2*theta2)@expm(S3*theta3)@expm(S4*theta4)@expm(S5*theta5)@expm(S6*theta6)@M
+
+	# ==============================================================#
+
+	print(str(T) + "\n")
+
+	return_value[0] = theta1 + pi
+	return_value[1] = theta2
+	return_value[2] = theta3
+	return_value[3] = theta4 - (0.5*pi)
+	return_value[4] = theta5
+	return_value[5] = theta6
+
+	return return_value
+
+def lab_invk(xWgrip, yWgrip, zWgrip, yaw_WgripDegree):
+	# =================== Your code starts here ====================#
+	
+	yaw = np.radians(yaw_WgripDegree)
+
+	xgrip = xWgrip + 150
+	ygrip = yWgrip - 150
+	zgrip = zWgrip - 10
+
+	xcen = xgrip - L9*np.cos(yaw)
+	ycen = ygrip - L9*np.sin(yaw)
+	zcen = zgrip
+
+	#theta1 = np.arcsin((ycen-L2)/xcen)
+	theta1 = np.arctan2(ycen, xcen) - np.arcsin((L2-L4+L6)/np.sqrt(xcen**2 + ycen**2))
+	theta6 = theta1 + pi/2 - yaw
+
+	x3end = xcen - L7
+	y3end = ycen - L6 - 27
+	z3end = zcen + L8 + L10
+
+	r = L3 + L5
+	d = ((r**2 - L3**2 - L5**2)/(2*L3*L5))
+	alpha = np.arccos((r**2 + L3**2 - L5**2)/(2*L3*r))
+	beta = np.arccos((-r**2 + L3**2 + L5**2)/(2*L3*L5))
+	gamma = np.arctan2(z3end, x3end)
+
+	theta2 = -(alpha + gamma)
+	theta3 = pi - gamma
+	theta4 = -(theta2 + theta3)
+	theta5 = -pi/2
+	
+	# ==============================================================#
+	return lab_fk(theta1, theta2, theta3, theta4, theta5, theta6)
 
 def main(args=None):
     input("Check if the UR3e is in 'Remote' Mode?\n\
