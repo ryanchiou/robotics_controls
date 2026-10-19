@@ -253,39 +253,44 @@ def lab_fk(theta1, theta2, theta3, theta4, theta5, theta6):
 	return return_value
 
 def lab_invk(xWgrip, yWgrip, zWgrip, yaw_WgripDegree):
-	# =================== Your code starts here ====================#
-	
-	yaw = np.radians(yaw_WgripDegree)
+    # =================== Your code starts here ====================#
+    
+    yaw = np.radians(yaw_WgripDegree)
 
-	xgrip = xWgrip + 150
-	ygrip = yWgrip - 150
-	zgrip = zWgrip - 10
+    xgrip = xWgrip*1000 + 150
+    ygrip = yWgrip*1000 - 150
+    zgrip = zWgrip*1000 - 10
 
-	xcen = xgrip - L9*np.cos(yaw)
-	ycen = ygrip - L9*np.sin(yaw)
-	zcen = zgrip
+    xcen = xgrip - L9*np.cos(yaw)
+    ycen = ygrip - L9*np.sin(yaw)
+    zcen = zgrip
 
-	#theta1 = np.arcsin((ycen-L2)/xcen)
-	theta1 = np.arctan2(ycen, xcen) - np.arcsin((L2-L4+L6)/np.sqrt(xcen**2 + ycen**2))
-	theta6 = theta1 + pi/2 - yaw
+    #theta1 = np.arcsin((ycen-L2)/xcen)
+    offset = L2-L4+L6 #right
+    theta1 = np.arctan2(ycen, xcen) - np.arcsin(offset/np.sqrt(xcen**2 + ycen**2))
+    theta6 = theta1 + pi/2 - yaw
 
-	x3end = xcen - L7
-	y3end = ycen - L6 - 27
-	z3end = zcen + L8 + L10
+    x3end = xcen - L7*np.cos(theta1) + offset*np.sin(theta1) 
+    y3end = ycen - L7*np.sin(theta1) - offset*np.cos(theta1)
+    z3end = zcen + L8 + L10 #right
 
-	r = L3 + L5
-	d = ((r**2 - L3**2 - L5**2)/(2*L3*L5))
-	alpha = np.arccos((r**2 + L3**2 - L5**2)/(2*L3*r))
-	beta = np.arccos((-r**2 + L3**2 + L5**2)/(2*L3*L5))
-	gamma = np.arctan2(z3end, x3end)
+    #r = np.sqrt(x3end**2 + y3end**2) #wrong
 
-	theta2 = -(alpha + gamma)
-	theta3 = pi - gamma
-	theta4 = -(theta2 + theta3)
-	theta5 = -pi/2
-	
-	# ==============================================================#
-	return lab_fk(theta1, theta2, theta3, theta4, theta5, theta6)
+    r = np.linalg.norm(np.array([x3end, y3end, z3end])-np.array([-150,150,L1]))
+    h = z3end - L1 #right
+    alpha = np.arccos((r**2 + L3**2 - L5**2)/(2*L3*r))
+    beta = np.arccos((-r**2 + L3**2 + L5**2)/(2*L3*L5))
+    gamma = np.arctan2(h, r)
+
+    theta2 = -(alpha + gamma)
+    theta3 = -(theta2 + pi - gamma)
+    theta4 = pi - beta
+    theta5 = -pi/2
+
+    print(np.degrees(theta1), np.degrees(theta2), np.degrees(theta3), np.degrees(theta4), np.degrees(theta5), np.degrees(theta6))
+
+    # ==============================================================#
+    return lab_fk(theta1, theta2, theta3, theta4, theta5, theta6)
 
 def main(args=None):
     input("Check if the UR3e is in 'Remote' Mode?\n\
