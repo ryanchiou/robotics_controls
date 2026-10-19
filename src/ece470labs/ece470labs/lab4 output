@@ -1,0 +1,42 @@
+andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab4_exec 0.18 -0.1 0.06 -45
+Check if the UR3e is in 'Remote' Mode?
+    Check if the UR3e is initialized and in 'Normal' state.
+    Have you run the ROS2 launch statement?
+    If there was an UR3e emergency stop or error, Ctrl-C the ros2 launch and rerun.
+    
+    Press <Enter> to Continue.
+[INFO] [1792424023.213922020] [ur3e]: Waiting for initial state updates...
+
+xWgrip: 0.18, yWgrip: -0.1, zWgrip: 0.06, yaw_WgripDegree: -45
+
+-57.25889671260091 -61.35864393543396 112.19283558232252 -50.83419164688856 -90.0 77.74110328739908
+Foward kinematics calculated:
+
+[[ 7.07106781e-01  7.07106781e-01  9.93608090e-16  1.80000000e+02]
+ [-7.07106781e-01  7.07106781e-01  2.85621935e-16 -1.00000000e+02]
+ [-2.76736750e-17  1.33290098e-16  1.00000000e+00  6.00000000e+01]
+ [-1.40968992e-18  1.89194851e-18 -4.69977906e-18  1.00000000e+00]]
+
+[INFO] [1792424023.715684110] [ur3e]: Moving to position: [ 122.74110329  -61.35864394  112.19283558 -140.83419165  -90.
+   77.74110329]
+andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab4_exec 0.27 0.33 0.23 90
+Check if the UR3e is in 'Remote' Mode?
+    Check if the UR3e is initialized and in 'Normal' state.
+    Have you run the ROS2 launch statement?
+    If there was an UR3e emergency stop or error, Ctrl-C the ros2 launch and rerun.
+    
+    Press <Enter> to Continue.
+[INFO] [1792424115.262351616] [ur3e]: Waiting for initial state updates...
+
+xWgrip: 0.27, yWgrip: 0.33, zWgrip: 0.23, yaw_WgripDegree: 90
+
+-0.6148889062878855 -60.34319422622753 58.46989843674571 1.8732957894818238 -90.0 -0.6148889062878887
+Foward kinematics calculated:
+
+[[-1.64059561e-16 -1.00000000e+00 -1.97389331e-16  2.70000000e+02]
+ [ 1.00000000e+00 -8.11559599e-17  9.16688436e-19  3.30000000e+02]
+ [ 4.13446680e-16 -1.99558571e-17  1.00000000e+00  2.30000000e+02]
+ [ 8.66958884e-19 -2.73064730e-19  1.34619545e-19  1.00000000e+00]]
+
+[INFO] [1792424115.764071467] [ur3e]: Moving to position: [179.38511109 -60.34319423  58.46989844 -88.12670421 -90.
+  -0.61488891]
