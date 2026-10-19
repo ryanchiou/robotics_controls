@@ -1,25 +1,13 @@
-andrewe9@eceb-3071-l06:~/ECE470Labs/lab_files$ ros2 run ece470labs lab3_exec 0 -90 45 0 -90 105
-Check if the UR3e is in 'Remote' Mode?
-    Check if the UR3e is initialized and in 'Normal' state.
-    Have you run the ROS2 launch statement?
-    If there was an UR3e emergency stop or error, Ctrl-C the ros2 launch and rerun.
-    
-    Press <Enter> to Continue.
-[INFO] [1790610243.479798440] [ur3e]: Waiting for initial state updates...
+xWgrip: 0.1, yWgrip: 0.1, zWgrip: 0.15, yaw_WgripDegree: 90
 
-theta1: 0, theta2: -90, theta3: 45, theta4: 0, theta5: -90, theta6: 105
-
+-51.446314883650366 -48.997907079123436 -111.33918665286656 63.475023837117575 -90.0 -51.446314883650366
 Foward kinematics calculated:
 
-Traceback (most recent call last):
-  File "/home/andrewe9/ECE470Labs/lab_files/install/ece470labs/lib/ece470labs/lab3_exec", line 33, in <module>
-    sys.exit(load_entry_point('ece470labs', 'console_scripts', 'lab3_exec')())
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 284, in main
-    new_dest = lab_fk(float(sys.argv[1])*pi/180.0, float(sys.argv[2])*pi/180.0, \
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/andrewe9/ECE470Labs/lab_files/build/ece470labs/ece470labs/lab3_exec.py", line 239, in lab_fk
-    T = expm(S1*theta1)@expm(S2*theta2)@expm(S3*theta3)@expm(S4*theta4)@expm(S5*theta5)@expm(S6*theta6)@M
-             ~~^~~~~~~
-TypeError: can't multiply sequence by non-int of type 'float'
-[ros2run]: Process exited with failure 1
+[[ 5.45628707e-01 -5.65151989e-01 -6.18783115e-01  4.35049156e+01]
+ [ 3.15368409e-01 -5.45628707e-01  7.76422617e-01  1.70887618e+02]
+ [-7.76422617e-01 -6.18783115e-01 -1.19479602e-01  4.78708664e+02]
+ [ 4.02107687e-19 -5.35543059e-18  1.55110282e-18  1.00000000e+00]]
+
+[INFO] [1792422839.903622178] [ur3e]: Moving to position: [ 128.55368512  -48.99790708 -111.33918665  -26.52497616  -90.
+  -51.44631488]
+[ERROR] [1792422845.971472936] [ur3e]: Failed to move to goal
