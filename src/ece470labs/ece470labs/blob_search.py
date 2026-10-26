@@ -20,7 +20,7 @@ def IMG2W(col, row):
     yc = (col - Oc) / beta
 
     xw = np.cos(theta) * (xc-tx) * np.sin(theta) * (yc-ty)
-    yw = -np.sin(theta) * (xc-ty) * np.cos(theta) + (yc-ty)
+    yw = -np.sin(theta) * (xc-tx) * np.cos(theta) * (yc-ty)
 
     return xw, yw
 
