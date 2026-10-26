@@ -1,138 +1,116 @@
 #!/usr/bin/env python
+
+from turtle import color
+
+import cv2
 import numpy as np
-from scipy.linalg import expm
-from math import pi
-import math
 
-"""
-Use 'expm' for matrix exponential.
-Angles are in radian, distance are in meters.
-"""
+# ========================= Student's code starts here =========================
 
-def Get_MS():
-	# =================== Your code starts here ====================#
-	# Fill in the correct values for S1~6, as well as the M matrix
-	M = np.array([[0,-1,0,392],\
-        [0,0,-1,432],\
-        [1,0,0,215.5],\
-        [0,0,0,1]])
+# Params for camera calibration
+theta = 0.0
+beta = 750
+tx = 0.0
+ty = 0.0
 
-	S1 = np.array([[0,-1,0,150],\
-        [1,0,0,150],\
-        [0,0,0,0],\
-        [0,0,0,0]])
+# Function that converts image coord to world coord
+def IMG2W(col, row):
+    Or = 240
+    Oc = 320
 
-	S2 = np.array([[0,0,1,-162],\
-        [0,0,0,0],\
-        [-1,0,0,-150],\
-        [0,0,0,0]])
+    xc = (row - Or) / beta
+    yc = (col - Oc) / beta
 
-	S3 = np.array([[0,0,1,-162],\
-        [0,0,0,0],\
-        [-1,0,0,94],\
-        [0,0,0,0]])
+    xw = np.cos(theta) * (xc-tx) + np.sin(theta) * (yc-ty)
+    yw = -np.sin(theta) * (xc-tx) + np.cos(theta) * (yc-ty)
 
-	S4 = np.array([[0,0,1,-162],\
-        [0,0,0,0],\
-        [-1,0,0,307],\
-        [0,0,0,0]])
+    return xw, yw
 
-	S5 = np.array([[0,0,0,0],\
-        [0,0,-1,162],\
-        [0,1,0,-281],\
-        [0,0,0,0]])
+# ========================= Student's code ends here ===========================
 
-	S6 = np.array([[0,0,1,-162],\
-        [0,0,0,0],\
-        [-1,0,0,392],\
-        [0,0,0,0]])       
- 
+def blob_search(image_raw, color):
 
-	# ==============================================================#
-	return M, S1, S2, S3, S4, S5, S6
+    # Setup SimpleBlobDetector parameters.
+    params = cv2.SimpleBlobDetector_Params()
 
+    # ========================= Student's code starts here =========================
 
-"""
-Function that calculates encoder numbers for each motor
-"""
-def lab_fk(theta1, theta2, theta3, theta4, theta5, theta6):
+    # Filter by Color
+    params.filterByColor = True
+    params.blobColor = 255
 
-	# Initialize the return_value
-	return_value = [None, None, None, None, None, None]
+    # Filter by Area.
+    params.filterByArea = True
+    params.minArea = 50
+    params.maxArea = 2500
 
-	M, S1, S2, S3, S4, S5, S6 = Get_MS()
+    # Filter by Circularity
+    params.filterByCircularity = False
 
-	# =========== Implement joint angle to encoder expressions here ===========
-	print("Foward kinematics calculated:\n")
+    # Filter by Inerita
+    params.filterByInertia = False
 
-	# =================== Your code starts here ====================#
+    # Filter by Convexity
+    params.filterByConvexity = False
 
-	T = expm(S1*theta1)@expm(S2*theta2)@expm(S3*theta3)@expm(S4*theta4)@expm(S5*theta5)@expm(S6*theta6)@M
+    # ========================= Student's code ends here ===========================
 
-	# ==============================================================#
+    # Create a detector with the parameters
+    detector = cv2.SimpleBlobDetector_create(params)
 
-	print(str(T) + "\n")
+    # Convert the image into the HSV color space
+    hsv_image = cv2.cvtColor(image_raw, cv2.COLOR_BGR2HSV)
 
-	return_value[0] = theta1 + pi
-	return_value[1] = theta2
-	return_value[2] = theta3
-	return_value[3] = theta4 - (0.5*pi)
-	return_value[4] = theta5
-	return_value[5] = theta6
+    # ========================= Student's code starts here =========================
 
-	return return_value
+    if color == "green":
+        lower = (45,100,150)   # green lower
+        upper = (85,255,255)   # green upper
+    elif color == "orange":
+        lower = (0,100,90)     # orange lower
+        upper = (20,255,255)   # orange upper
+    else:
+        print("Invalid color input. Please choose 'green' or 'orange'.")
+        return []
 
+    # Define a mask using the lower and upper bounds of the target color
 
-"""
-Function that calculates an elbow up Inverse Kinematic solution for the UR3
-"""
-def lab_invk(xWgrip, yWgrip, zWgrip, yaw_WgripDegree):
-    # =================== Your code starts here ====================#
-    
-	L1 = 152
-	L2 = 120
-	L3 = 244
-	L4 = 93
-	L5 = 213
-	L6 = 104
-	L7 = 85
-	L8 = 92
-	L9 = 53.5
-	L10 = 59
-	
-	yaw = np.radians(yaw_WgripDegree)
+    mask_image = cv2.inRange(hsv_image, lower, upper)
 
-	xgrip = xWgrip*1000 + 150
-	ygrip = yWgrip*1000 - 150
-	zgrip = zWgrip*1000 - 10
+    # ========================= Student's code ends here ===========================
 
-	xcen = xgrip - L9*np.cos(yaw)
-	ycen = ygrip - L9*np.sin(yaw)
-	zcen = zgrip
+    keypoints = detector.detect(mask_image)
+
+    # Find blob centers in the image coordinates
+    blob_image_center = []
+    num_blobs = len(keypoints)
+    for i in range(num_blobs):
+        blob_image_center.append((keypoints[i].pt[0],keypoints[i].pt[1]))
+
+    # ========================= Student's code starts here =========================
+
+    # Draw the keypoints on the detected block
+    im_with_keypoints = cv2.drawKeypoints(image_raw, keypoints, np.array([]), (0,0,255))
+
+    # ========================= Student's code ends here ===========================
+
+    xw_yw = []
+
+    if(num_blobs == 0):
+        print("No block found!")
+    else:
+        # Convert image coordinates to global world coordinate using IM2W() function
+        for i in range(num_blobs):
+            xw_yw.append(IMG2W(blob_image_center[i][0], blob_image_center[i][1]))
 
 
-	offset = L2-L4+L6 
-	theta1 = np.arctan2(ycen, xcen) - np.arcsin(offset/np.sqrt(xcen**2 + ycen**2))
-	theta6 = theta1 + pi/2 - yaw
+    cv2.namedWindow("Camera View")
+    cv2.imshow("Camera View", image_raw)
+    cv2.namedWindow("Mask View")
+    cv2.imshow("Mask View", mask_image)
+    cv2.namedWindow("Keypoint View")
+    cv2.imshow("Keypoint View", im_with_keypoints)
 
-	x3end = xcen - L7*np.cos(theta1) + offset*np.sin(theta1) 
-	y3end = ycen - L7*np.sin(theta1) - offset*np.cos(theta1)
-	z3end = zcen + L8 + L10 
+    cv2.waitKey(2)
 
-
-	d = x3end*np.cos(theta1)+ y3end*np.sin(theta1)
-	h = z3end - L1
-	r = np.linalg.norm(np.array([x3end, y3end, z3end])-np.array([0,0,L1]))
-	alpha = np.arccos((r**2 + L3**2 - L5**2)/(2*L3*r))
-	beta = np.arccos((-r**2 + L3**2 + L5**2)/(2*L3*L5))
-	gamma = np.arctan2(h, d)
-
-	theta2 = -(alpha + gamma)
-	theta3 = pi - beta
-	theta4 = -(theta2 + theta3)
-	theta5 = -pi/2
-
-	print(np.degrees(theta1), np.degrees(theta2), np.degrees(theta3), np.degrees(theta4), np.degrees(theta5), np.degrees(theta6))
-
-    # ==============================================================#
-	return lab_fk(theta1, theta2, theta3, theta4, theta5, theta6)
+    return xw_yw
